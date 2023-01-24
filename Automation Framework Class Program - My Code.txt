@@ -1,0 +1,253 @@
+﻿@ C:\Users\Raji\IdeaProjects\SelAutomationProj2
+Base Class Code:
+package BasePackage;
+
+
+import UtilityPackage.Utilis;
+import io.github.bonigarcia.wdm.WebDriverManager;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
+
+public class BaseClass {    //Parent Class
+   public static WebDriver driver;
+   public static Properties prop;
+
+
+   public BaseClass() {        //Constructor
+       try {
+           prop = new Properties();
+           FileInputStream fis = new FileInputStream("C:\\Users\\Raji\\IdeaProjects\\SelAutomationProj2\\src\\main\\java\\ConfigPackage\\Config.Properties");
+           prop.load(fis);
+       }
+       catch (FileNotFoundException e) {
+           e.printStackTrace();
+       }
+       catch (IOException e) {
+           e.printStackTrace();
+       }
+
+
+   }
+   public void Initialization(){
+       WebDriverManager.chromedriver().setup();
+       driver = new ChromeDriver();
+       driver.manage().window().maximize();
+       driver.get(prop.getProperty("url"));
+       System.out.println("URL: " + prop.getProperty("url"));
+       driver.manage().timeouts().pageLoadTimeout(Utilis.PAGE_LOAD_TIMEOUT, TimeUnit.SECONDS);
+       driver.manage().timeouts().implicitlyWait(Utilis.IMPLICIT_WAIT, TimeUnit.SECONDS);
+   }
+}
+Config.Properties File Code:Providing Data in the .properties file as:
+url=http://www.whiteboxqa.com/        
+username =rajitha.k.rao@gmail.com
+password =Raji2022
+
+
+Utilis File Code:Providing (declaring & specifying) page load wait-times in here as:
+package UtilityPackage;
+
+
+import BasePackage.BaseClass;
+
+
+public class Utilis extends BaseClass {
+   public static long PAGE_LOAD_TIMEOUT = 20;  //my-defined variable
+   public static long  IMPLICIT_WAIT = 30;     // my-defined variable
+
+
+}
+
+
+HOME PAGE PROGRAM CODE:
+package PagePackage;
+
+
+import BasePackage.BaseClass;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.PageFactory;
+
+
+public class HomePage extends BaseClass {
+   @FindBy(xpath = "//img[@id = 'logo']")
+   WebElement wbllogo;     //declaring the elements
+
+
+   @FindBy(xpath = "//button[@id=\"headerfblogin\"]")
+   WebElement freestudent;
+
+
+   @FindBy(id="loginButton") //Can also use - @FindBy(xpath = "//a[@id="loginButton"]")
+   WebElement loginbtn;
+
+
+   public HomePage(WebDriver driver){      //Constructor
+    this.driver = driver;
+       PageFactory.initElements(driver, this); //Indicating both drivers & their functionality is the same
+
+
+   }
+
+
+   public boolean CheckWblLogo(){
+       return wbllogo.isDisplayed();
+   }
+
+
+   public boolean CheckFreeStudent(){
+       return freestudent.isDisplayed();
+   }
+
+
+   public LoginPage ClickLogin(){      //Returns a page = LoginPAge
+       loginbtn.click();
+       return new LoginPage(driver);
+   }
+
+
+}
+
+
+
+
+HOME PAGE TEST PROGRAM Code:
+package PageTestPackage;
+
+
+import BasePackage.BaseClass;
+import PagePackage.HomePage;
+import PagePackage.LoginPage;
+import org.testng.Assert;
+import org.testng.annotations.*;
+
+
+public class HomePageTest extends BaseClass {
+   HomePage hp;    //Reference variable - object declaration
+   LoginPage lp;
+
+
+   public HomePageTest(){
+       super();        // Will use the methods both from this class & it's Parent's Class
+   }
+   @BeforeTest         // USed @BeforeTest instead of @BeforeMethod so the following will happen only once for this test
+   public void setup(){
+       Initialization();       //Initialization of driver & get URL
+       hp = new HomePage(driver);
+   }
+   @AfterTest          // USed @AfterTest instead of @AfterMethod so all the Tests run once & finally the driver will close once at the end of this test (testing this page)
+   public void Teardown() throws InterruptedException {
+       Thread.sleep(5000);
+       driver.close();
+   }
+   @Test(priority = 0)
+   public void Testlogo(){
+      boolean logo = hp.CheckWblLogo();
+       Assert.assertTrue(logo);
+       System.out.println("Logo is Present");
+   }
+   @Test(priority = 1)
+   public void TestFreeStudent(){
+       boolean student = hp.CheckFreeStudent();
+       Assert.assertTrue(student);
+       System.out.println("Free Student Access link is Present");
+   }
+
+
+   @Test(priority = 2)
+   public void verifylogin(){
+       hp.ClickLogin();
+       System.out.println("Login Clicked");
+   }
+}
+LOGIN PAGE Program Code:
+package PagePackage;
+
+
+import BasePackage.BaseClass;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.PageFactory;
+
+
+public class LoginPage extends BaseClass    {
+   @FindBy(id="username")
+   WebElement user;
+   @FindBy(id="password")
+   WebElement pass;
+   @FindBy(id="login")
+   WebElement submit;
+
+
+   public LoginPage(WebDriver driver){
+       this.driver = driver;
+       PageFactory.initElements(driver, this);
+   }
+   public void loginmethod(String un, String pwd){
+       user.sendKeys(un);
+       pass.sendKeys(pwd);
+   }
+   public LandingPage clickSubmit(){
+       submit.click();
+       return new LandingPage();
+   }
+}
+
+
+LOGIN PAGE TEST Program Code:
+
+
+package PageTestPackage;
+
+
+import BasePackage.BaseClass;
+import PagePackage.HomePage;
+import PagePackage.LandingPage;
+import PagePackage.LoginPage;
+import org.testng.annotations.*;
+
+
+public class LoginPageTest extends BaseClass {
+
+
+   HomePage hp;
+   LoginPage lp;
+   LandingPage landP; //We have to Create the Landing Page before returning this kind of the Page in any other class
+
+
+   public LoginPageTest(){
+       super();
+   }
+
+
+   @BeforeTest
+   public void setup(){
+       Initialization();
+       hp = new HomePage(driver);
+       lp = new LoginPage(driver);
+       landP = new LandingPage();
+       hp.ClickLogin();
+   }
+  // @AfterMethod
+   @AfterTest  // Changed to AfterTest instead of @AfterMethod
+   public void Teardown() throws InterruptedException {
+       Thread.sleep(5000);
+       // Can add code to click the Logout button & then close the browser
+       driver.close();
+   }
+ @Test
+   public void TestLogin(){
+       lp.loginmethod(prop.getProperty("username"), prop.getProperty("password") );
+       landP = lp.clickSubmit();   //We have to Create the Landing Page before returning this kind of the Page in any other class
+   }
+}
