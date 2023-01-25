@@ -1,4 +1,5 @@
 ﻿@ C:\Users\Raji\IdeaProjects\SelAutomationProj2
+ Below is the code to test the website "http://www.whiteboxqa.com"
 Base Class Code:
 package BasePackage;
 
